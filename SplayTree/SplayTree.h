@@ -91,7 +91,11 @@ namespace SplTr
 	private:
 
 	public:
-		void							run						(SplayTree<T> *Tr = nullptr);
+		//This function tests all SplayTree main functions.
+		//Gets user's input from console and visualizes changes in a user-friendly way.
+		//Parameter Tr is used for working with an existing tree to save result.
+		//If Tr is not specified, tree is created automatically and gets deleted.
+		void							getInput						(SplayTree<T> *Tr = nullptr);
 	};
 
 
@@ -466,7 +470,7 @@ void SplTr::SplayTree<T>::printLine(Node<T> *p, int level)
 
 //
 template<class T>
-inline void SplTr::InputHandler<T>::run(SplayTree<T> *Tr)
+inline void SplTr::InputHandler<T>::getInput(SplayTree<T> *Tr)
 {
 	bool existing = true;
 	if (!Tr)
