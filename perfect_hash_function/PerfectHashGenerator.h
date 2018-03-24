@@ -1,48 +1,67 @@
 #pragma once
 
 #define FNV_32_PRIME 0x01000193
-#include <vector>
+#include "CsvParser.h"
 #include <map>
 #include <list>
 #include <set>
 #include <algorithm>
+#include <utility>
 
 using namespace std;
 
 namespace hshlib
 {
 
+//	template<class T>
+//	ifstream& operator>>(ifstream &f, map<char*, T> x);
 
+//	template<class T>
+//	ofstream& operator<<(ofstream &f, map<char*, T> x);
 
-	template<typename T>
+	template<class T>
 	class PerfectHashing
 	{
 	public:
-		void create(map<char*, T*> dict);
-		void create(char *filename);
-		T* lookUp(char *word);
+		void create(map<string, T> &dict);
+		void create(string filename, map<string, T> &dict);
+		T lookUp(string word);
 
 	private:
-		vector<T*> values;
+		vector<T> values;
 		vector<int> D;
-		int readFile(char *filename, map<char*, T*> &container);
-		int hash(int d, char *word, int s);
+		int hash(int d, string word, int s);
 	};
-	int cmp(vector<char*> &x, vector<char*> &y);
+
+	int cmp(vector<string> &x, vector<string> &y);
+
+//	template<class T>
+//	ifstream & operator>>(ifstream & f, map<char*, T> x)
+//	{
+//		istreambuf_iterator<char> iter(file);
+//		copy(iter, ifstreambuf_iterator<char> {}, back_inserter(container));
+//		f.flush();
+//		return f;
+//	}
+//	template<class T>
+//	ofstream & operator<<(ofstream & f, map<char*, T> x)
+//	{
+//		copy(x.begin(), x.end(), ofstream_iterator<char>(f));
+//		f.flush();
+//		return f;
+//	}
 }
 
-/*
-<summary>Create minimal perfect hashing for given dictionary of constant size</summary>
-<returns>void</returns>
-*/
-template<typename T>
-void hshlib::PerfectHashing<T>::create(map<char*, T*> dict)
+
+//Create minimal perfect hashing for given dictionary of constant size.
+template<class T>
+void hshlib::PerfectHashing<T>::create(map<string, T> &dict)
 {
 	int size = dict.size();
-	vector<vector<char*>> buckets(size);
+	vector<vector<string>> buckets(size);
 
 	D.resize(size);
-	values.assign(size, nullptr);
+	values.resize(size);
 
 	for (auto i = dict.begin(); i != dict.end(); ++i)				//Place keys into buckets (keys are placed in same bucket if they have equal values of first hash function).
 	{
@@ -102,27 +121,62 @@ void hshlib::PerfectHashing<T>::create(map<char*, T*> dict)
 		values[slot] = dict.find(buckets[i][0])->second;
 		++i;
 	}
+	cout << endl;
 }
 
 
-/*
-<summary>Create minimal perfect hashing from text file</summary>
-<returns></returns>
-*/
-template<typename T>
-void hshlib::PerfectHashing<T>::create(char * filename)
+
+//Create minimal perfect hashing from file that contains dict (std::map).
+template<class T>
+void hshlib::PerfectHashing<T>::create(string filename, map<string, T> &dict)
 {
-	map<char*, T> dict = nullptr;
-	int size = readFile(filename, dict);
-	create(dict, size);
+	if (filename == "")
+		return;
+	prsr::CsvParser Parse;
+	vector<vector<string>> data = Parse(filename);
+	if (data.size() == 0)
+		return;
+	if (data[0].size() != 2)
+		return;
+
+	for (auto i : data)
+	{
+		if (i.size() < 2)
+			continue;
+//		{
+//			cout << "SIZE ERR" << endl;
+//			system("pause");
+//			return;
+//		}
+		pair<string, T> p(i[0], T(i[1].c_str()));
+		dict.insert(p);
+	}
+//	ifstream file(filename, ios::in || ios::binary);
+	//	string key;
+	//	char *val_tmp = nullptr;
+	//	T val;
+	//	while (!file.eof())
+	//	{
+	//		file >> key;
+	////		file >> val;
+	////		*val = reinterpret_cast<T>(val_tmp);
+	//		//file.read((char*)&val, sizeof(T));
+	////		file.read(charval;
+	//		pair<char*, T> m;
+	//		m.first = (char*)key.c_str();
+	////		m.second = val;
+	//		container.insert(m);
+	//	}
+//	int size = readFile(filename, dict);
+//	file >> dict;
+	create(dict);
 }
 
-/*
-<summary>Look up a value. Must be sure key exists in the table otherwise result is unpredictable.</summary>
-<returns>Pointer to the value found.</returns>
-*/
-template<typename T>
-T* hshlib::PerfectHashing<T>::lookUp(char * key)
+
+//Look up a value. Must be sure key exists in the table otherwise result is unpredictable.
+//Returns pointer to the value found.
+template<class T>
+T hshlib::PerfectHashing<T>::lookUp(string key)
 {
 	int k = hash(0, key, D.size());
 	int d = D[k];
@@ -132,45 +186,28 @@ T* hshlib::PerfectHashing<T>::lookUp(char * key)
 	return values[k];
 }
 
-/*
-<summary>Read binary file that contains dictionary.</summary>
-<returns>Size of resulting dictionary.</returns>
-*/
-template<typename T>
-int hshlib::PerfectHashing<T>::readFile(char * filename, map<char*, T*> &container)
-{
-	if (container.size()!=0 || filename == nullptr || filename == "")
-		return 0;
-	ifstream file(filename, ios::in | ios::binary);
-	char *key;
-	T val
-	while (!file.eof())
-	{
-		file >> key;
-		file >> val;
-		container.insert({ key, &val });
-	}
-	return container.size();
-}
 
-/*
-<summary>Calculate hash function (FNV algorithm).</summary>
-<returns>Hash value.</returns>
-*/
-template<typename T>
-int hshlib::PerfectHashing<T>::hash(int d, char * word, int s)
+//Calculate hash function (FNV algorithm used).
+template<class T>
+int hshlib::PerfectHashing<T>::hash(int d, string word, int s)
 {
 	long long int R = d;
 	if (d == 0)
 		R = FNV_32_PRIME;
-	char *c = word;
-	while (*c != '\0')
+	for (auto sym : word)
 	{
-		R = (R*FNV_32_PRIME) ^ *c;
-		++c;
+		R = (R*FNV_32_PRIME) ^ sym;
+		++sym;
 	}
 	d = R%s;
 	if (d < 0)
 		d += s;
 	return d;
+}
+
+
+//Comparator for sorting function.
+int hshlib::cmp(vector<string>& x, vector<string>& y)
+{
+	return x.size() > y.size();
 }

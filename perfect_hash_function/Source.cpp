@@ -10,75 +10,35 @@
 #include "PerfectHashGenerator.h"
 #include <iostream>
 
-//#include <string>
-
 using namespace std;
 
-char *DICTIONARY = "dict.bin";
+//char *DICTIONARY = "dict.bin";
 
 
-map<char*, char*> dict = {
-	{ "embarrassment", "disturbance" },
-	{ "excitement", "mystery" },
-	{ "consciousness", "past" },
-	{ "unlikely", "minor" },
-	{ "continuation", "round" },
-	{ "manufacture", "secretary" },
-	{ "relaxation", "swim" },
-	{ "personality", "dress" },
-	{ "humanity", "church" },
-	{ "hypothesize", "research" },
-	{ "recommendation", "advice" },
-	{ "conventional", "critical" },
-	{ "reputation", "soap" },
-	{ "representative", "justice" },
-	{ "environment", "desert" },
-	{ "evolution", "essential" },
-	{ "contemporary", "contempt" },
-	{ "aluminium", "sugar" },
-	{ "retirement", "terrace" },
-	{ "dictionary", "overall" },
-	{"credibility", "exchange" },
-	{ "delivery", "flat" },
-	{ "photocopy", "lifestyle" },
-	{ "achievement", "award" },
-	{ "possibility", "adventure" },
-	{ "unfortunate", "movie" },
-	{ "psychology", "support" },
-	{ "declaration", "proclaim" },
-	{ "entitlement", "discriminate" },
-	{ "consolidate", "dribble" }
-};
+map<string, char*> dict;
 
 int main(int argc, char **argv)
 {
-	//char **words = nullptr;
-	int size = 0;
-	/*if (argc < 2)
-	{*/
-		char *words[] = {
-		"excitement", "consolidate", "declaration", "photocopy", "delivery",
-		"achievement", "humanity", "representative", "embarrassment", "environment",
-		"recommendation", "retirement", "reputation", "unlikely", "possibility",
-		"conventional", "manufacture", "psychology", "evolution", "hypothesize",
-		"aluminium", "dictionary", "credibility", "relaxation", "consciousness",
-		"entitlement", "continuation", "contemporary", "personality", "unfortunate" };
-		size = 30;
-	/*}*/
-	//func(words)
-	//else
-	//{
-	//	char **words = argv;
-	//	size = argc - 1;
-	//}
-		//func(argv)
-	hshlib::PerfectHashing<char> HashTable;
-	HashTable.create(dict);
+	size_t size = 0;
+	//char *words[] = {
+	//"excitement", "consolidate", "declaration", "photocopy", "delivery",
+	//"achievement", "humanity", "representative", "embarrassment", "environment",
+	//"recommendation", "retirement", "reputation", "unlikely", "possibility",
+	//"conventional", "manufacture", "psychology", "evolution", "hypothesize",
+	//"aluminium", "dictionary", "credibility", "relaxation", "consciousness",
+	//"entitlement", "continuation", "contemporary", "personality", "unfortunate" };
+	size = 30;
+	hshlib::PerfectHashing<char*> HashTable;
+	HashTable.create("submission.csv", dict);
 	int errors = 0;
+	int max = 2919;
+	int min = 1460;
 	for (size_t i = 0; i < size; ++i)
 	{
-		char* c = HashTable.lookUp(words[i]);
-		if (c != dict.find(words[i])->second)
+		int num = rand() % (max - min) + min;
+		string a = to_string(num);
+		string c = HashTable.lookUp(a);
+		if (c != dict.find(a)->second)
 			++errors;
 	}
 	if (errors == 0)
