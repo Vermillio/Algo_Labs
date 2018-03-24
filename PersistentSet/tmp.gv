@@ -1,0 +1,7 @@
+digraph im {
+A1 [label="3"];
+A1-> A2;
+A2 [label="2"];
+A1-> A3;
+A3 [label="4"];
+}
