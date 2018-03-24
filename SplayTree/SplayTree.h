@@ -73,19 +73,19 @@ namespace SplTr
 		void							clear					();
 
 		//Auxiliary function for tree output.
-		void							printLine(Node<T> *p, int level);
+		void							print(Node<T> *p, int level);
 
 										SplayTree				()									: root(nullptr), Size(0), selected(nullptr)	{	};
 										~SplayTree				()									{ clear(); };
 		
 		template<class T>
-		friend	class					InputHandler;
+		friend	class					BpTreeHandler;
 	};
 
 
 
 	template<class T>
-	class InputHandler
+	class BpTreeHandler
 	{
 
 	private:
@@ -441,18 +441,18 @@ inline void SplTr::SplayTree<T>::clear()
 template<class T>
 ostream & operator<<(ostream & c, SplTr::SplayTree<T>& tr)
 {
-	tr.printLine(tr.getRoot(), 0);
+	tr.print(tr.getRoot(), 0);
 	cout << endl;
 	return c;
 }
 
 //Print one line of tree. (horizontal oriented)
 template<class T>
-void SplTr::SplayTree<T>::printLine(Node<T> *p, int level)
+void SplTr::SplayTree<T>::print(Node<T> *p, int level)
 {
 	if (p)
 	{
-		printLine(p->r, level + 1);
+		print(p->r, level + 1);
 		for (int i = 0; i < level; i++)
 			cout << "     ";
 		if (p == selected)
@@ -463,14 +463,14 @@ void SplTr::SplayTree<T>::printLine(Node<T> *p, int level)
 			SetConsoleTextAttribute(hConsole, 7);
 		} else
 			cout << "(" << p->data << ")" << endl;
-		printLine(p->l, level + 1);
+		print(p->l, level + 1);
 	}
 	return;
 }
 
 //
 template<class T>
-inline void SplTr::InputHandler<T>::getInput(SplayTree<T> *Tr)
+inline void SplTr::BpTreeHandler<T>::getInput(SplayTree<T> *Tr)
 {
 	bool existing = true;
 	if (!Tr)
