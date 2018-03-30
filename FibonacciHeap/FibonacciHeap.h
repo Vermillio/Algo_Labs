@@ -4,11 +4,15 @@
 #include <iostream>
 #include <memory>
 #include <limits>
+#include <ctime>
+#include <algorithm>
 #include <vector>
+#include <cassert>
 
 using namespace std;
 
 namespace heap {
+
 	template<class T>
 	class FibonacciHeap
 	{
@@ -31,16 +35,8 @@ namespace heap {
 			FibonacciNode(T _key, size_t _degree, bool _marked, Nodep _prev, Nodep _next, Nodep _parent, Nodep _son) : key(_key), degree(_degree), marked(_marked), prev(_prev), next(_next), parent(_parent), son(_son) {};
 		};
 
-		class TestClass
-		{
-		public:
-			//Executes test function.
-			//Returns errors num.
-			size_t run(size_t repeat);
-			size_t checkCorrect(FibonacciHeap &heap);
-		};
-
-		void insert(T key);
+		size_t size() const;
+		Nodep insert(T key);
 		bool remove(Nodep p);
 		bool getMin(T &min);
 		bool extractMin(T &min);
@@ -54,17 +50,52 @@ namespace heap {
 		size_t Size;
 		Nodep min_elem;
 		Nodep FibTrees;
+
+		void merge(Nodep p, Nodep s);
+		void cut(Nodep t);
 	};
 
+	template<class T>
+	bool cmp(typename FibonacciHeap<T>::Nodep &a, typename FibonacciHeap<T>::Nodep &b)
+	{
+		if (a == nullptr)
+			return true;
+		if (b == nullptr)
+			return false;
+		return a->key < b->key;
+	}
 
 	template<class T>
-	inline void FibonacciHeap<T>::insert(T key)
+	using FibHeap = FibonacciHeap<T>;
+
+	template<class T>
+	inline size_t FibonacciHeap<T>::size() const
+	{
+		return Size;
+	}
+
+	template<class T>
+	inline typename FibHeap<T>::Nodep FibonacciHeap<T>::insert(T key)
 	{
 		Nodep newNodep(new Node(key));
+		if (!FibTrees)
+		{
+			min_elem = FibTrees = newNodep;
+			newNodep->next = newNodep;
+			newNodep->prev = newNodep;
+			Size = 1;
+			TreeNum = 1;
+			return newNodep;
+		}
 		newNodep->next = FibTrees->next;
+		FibTrees->next->prev = newNodep;
 		FibTrees->next = newNodep;
+		newNodep->prev = FibTrees;
+		if (!min_elem || min_elem->key > key)
+			min_elem = newNodep;
 		++Size;
 		++TreeNum;
+		return newNodep;
 	}
 
 	//!
@@ -73,9 +104,19 @@ namespace heap {
 	{
 		if (!p)
 			return false;
-		decreaseKey(ind, -numeric_limits<T>::infinity());
-		extractMin();
-		--Size;
+
+		if (Size == 1)
+		{
+			FibTrees = nullptr;
+			min_elem = nullptr;
+			TreeNum = 0;
+			Size = 0;
+			return true;
+		}
+
+		decreaseKey(p, -numeric_limits<T>::infinity());
+		T min;
+		extractMin(min);
 		return true;
 	}
 
@@ -86,10 +127,6 @@ namespace heap {
 			return false;
 		min = min_elem->key;
 		return true;
-//		size_t min_ind = getMin_proc();
-//		if (min_ind < 0)
-//			return T();
-//		return FibTrees[min_ind].keys[0];
 	}
 
 	template<class T>
@@ -100,76 +137,91 @@ namespace heap {
 
 		if (TreeNum == 1)
 		{
-			FibTrees = min_elem->son;
-			TreeNum = min_elem->degree - 1;
-			--Size;
 			min = min_elem->key;
+			TreeNum = min_elem->degree;
+			if (min_elem->son)
+			{
+				Nodep p = min_elem->son;
+				Nodep new_min = min_elem->son;
+				for (int i = 0; i < min_elem->degree; ++i)
+				{
+					if (p->key < new_min->key)
+						new_min = p;
+					p->parent = nullptr;
+					p = p->next;
+				}
+				FibTrees = min_elem = new_min;
+				--Size;
+			}
+			else
+			{
+				min_elem = nullptr;
+				FibTrees = nullptr;
+				Size = 0;
+				TreeNum = 0;
+			}
 			return true;
 		}
 
-		Nodep p = FibTrees;
-		Nodep new_min = min_elem->next;
+		//Remove min element
+		if (min_elem->son)
+		{
+			Nodep t = min_elem->son;
+			for (int j = 1; j < min_elem->degree; ++j)
+			{
+				t->parent = nullptr;
+				t = t->next;
+			}
+			t->parent = nullptr;
+			t->next = min_elem->next;
+			min_elem->next->prev = t;
+			min_elem->prev->next = min_elem->son;
+			min_elem->son->prev = min_elem->prev;
+			if (FibTrees == min_elem)
+				FibTrees = min_elem->son;
+		}
+		else {
+			min_elem->next->prev = min_elem->prev;
+			min_elem->prev->next = min_elem->next;
+			if (FibTrees == min_elem)
+				FibTrees = min_elem->next;
+		}
 
+		TreeNum += min_elem->degree - 1;
+		--Size;
+		min = min_elem->key;
+
+		min_elem = FibTrees;
+
+		Nodep p = FibTrees;
 		for (int i = 0; i < TreeNum; ++i)
 		{
-			if (p == min_elem)
-			{
-				Nodep t = min_elem->son;
-				for (int j = 1; j < min_elem->degree; ++j)
-				{
-					t->parent = nullptr;
-					t = t->next;
-				}
-				t->parent = nullptr;
-				p->prev->next = min_elem->son;
-				t->next = p->next;
-
-				if (FibTrees == min_elem)
-					FibTrees = min_elem->son;
-				TreeNum += min_elem->degree - 1;
-				--Size;
-				min = min_elem->key;
-			}
-			else if (p->key < new_min->key)
-				new_min = p;
+			if (p->key < min_elem->key)
+				min_elem = p;
 			if (p->degree == p->next->degree)
 			{
 				if (p->key > p->next->key)
 				{
-					//remove p from FibTrees list
-					p->prev->next = p->next;
-
-					//insert p into p->next as son (2nd place)
-					p->next = y->son->next;
-					p->next->son->next = p;
-					++p->next->degree;
-
-					//update main pointer if needed
-					if (FibTrees == p)
-						FibTrees = p->next;
-
-					--TreeNum;
+					if (p != p->next)
+					{
+						Nodep tmp = p->next;
+						merge(p->next, p);
+						p = tmp;
+						--i;
+					}
 				}
 				else {
-					//remove p->next from FibTrees
-					p->next = p->next->next;
-
-					//insert p->next into p as son (2nd place)
-					p->next->next = p->son->next;
-					p->son->next = p->next;
-					++p->degree;
-
-					//update main pointer if needed
-					if (FibTrees == p->next)
-						FibTrees = p;
-					++p->degree;
-					--TreeNum;
+					if (p != p->next)
+					{
+						merge(p, p->next);
+						--i;
+					}
 				}
-			}
-			p = p->next;
+			} 
+			else
+				p = p->next;
 		}
-
-		min_elem = new_min;
+		
 		return true;
 	}
 
@@ -178,29 +230,10 @@ namespace heap {
 	{
 		if (!p || p->key < new_val)
 			return false;
-
 		p->key = new_val;
-		if (!p->parent)
-		{
-			//insert sons of p instead of p.
-			p->prev->next = p->son;
-			Nodep t = p->son;
-			for (int i = 0; i < p->degree; ++i)
-				t = t->next;
-			t->next = p->next;
-			TreeNum += p->degree - 1;
-			return;
-		}
-		else {
-
-		}
-		//cut node from parent
-		//if parent is not root
-		//	if parent->marked == true
-		//		cut parent
-		//	else parent->marked = true
-		//
-
+		if (!p->parent || p->key >= p->parent->key)
+			return true;
+		cut(p);
 		return true;
 	}
 
@@ -212,32 +245,66 @@ namespace heap {
 		FibTrees = nullptr;
 	}
 
-
 	template<class T>
-	inline size_t FibonacciHeap<T>::TestClass::run(size_t repeat)
+	inline void FibonacciHeap<T>::merge(Nodep p, Nodep s)
 	{
-		FibonacciHeap<T> heap;
-		for (size_t i = 0; i < repeat; ++i)
-			heap.insert(T(rand()));
-		size_t errors = checkCorrect(heap);
-		for (size_t i = 0; i < repeat / 2; ++i)
-			heap.remove((size_t)rand() % heap.degree());
-		errors += checkCorrect(heap);
-		return errors;
-	}
+		//remove s from FibTrees list
+		s->prev->next = s->next;
+		s->next->prev = s->prev;
 
-	template<class T>
-	inline size_t FibonacciHeap<T>::TestClass::checkCorrect(FibonacciHeap<T> &heap)
-	{
-		size_t errors = 0;
-		for (size_t i = 0; i < heap.TreeNum; ++i)
+		//insert s into p->sons list
+		if (p->son)
 		{
-//			if (pow(2, heap.FibTrees[i].degree) != heap.FibTrees[i].keys.degree())
-//				++errors;
-//			for (size_t j = 1; j < heap.FibTrees[i].keys.degree(); ++j)
-//				if (heap.FibTrees[i].keys[heap.parent(j)] > heap.FibTrees[i].keys[j])
-//					++errors;
+			p->son->next->prev = s;
+			s->next = p->son->next;
+			s->prev = p->son;
+			p->son->next = s;
 		}
-		return errors;
+		else
+		{
+			p->son = s;
+			s->next = s;
+			s->prev = s;
+		}
+		s->parent = p;
+		++p->degree;
+
+		//update main pointer if needed
+		if (FibTrees == s)
+			FibTrees = p;
+		if (min_elem == s)
+			min_elem = p;
+		--TreeNum;
 	}
+
+	template<class T>
+	inline void FibonacciHeap<T>::cut(Nodep t)
+	{
+		//remove t from it's list
+		t->prev->next = t->next;
+		t->next->prev = t->prev;
+
+		//add t to FibTrees
+		t->next = FibTrees->next;
+		t->prev = FibTrees;
+		FibTrees->next->prev = t;
+		FibTrees->next = t;
+		++TreeNum;
+
+		//update t->parent
+		Nodep p = t->parent;
+		--p->degree;
+		t->parent = nullptr;
+
+		if (t->key < min_elem->key)
+			min_elem = t;
+
+		if (!p->parent)
+			return;
+
+		if (!p->marked)
+			p->marked = true;
+		else cut(p);
+	}
+
 }
