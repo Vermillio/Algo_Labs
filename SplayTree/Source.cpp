@@ -1,6 +1,8 @@
 //This program implements Splay tree, which is self-balancing tree.
 //A splay tree is a self-adjusting binary search tree with the additional property that recently accessed elements are quick to access again.
 
+//As an example of application of Splay tree here's provided Lexicographic Splay tree, 
+
 #include "LexicographicSearchTree.h"
 
 using namespace std;
