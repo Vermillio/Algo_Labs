@@ -4,98 +4,101 @@
 #include <utility>
 #include <iostream>
 #include <windows.h>
+#include <memory>
 using namespace std;
 
-namespace SplTr
+namespace Tree
 {
-	template<class T>
-	struct Node
-	{
-		T		data;
-		
-		Node	*l, *r, *parent;
 
-		Node	()									: l(nullptr), r(nullptr), parent(nullptr)	{};
+	template<class T, class D>
+	class NodeBase {
+		T data;
+		shared_ptr<Node> l, r, parent;
+		NodeBase() {};
+	};
+
+	template<class T>
+	class Node : public NodeBase<T, Node>
+	{
+		using Nodep = shared_ptr<Node>;
+
+		Node	() {
+			l = nullptr;
+			r = nullptr;
+			parent = nullptr;
+		};
 		
 		Node	(T &x, 
-				 Node *_l = nullptr, 
-				 Node *_r = nullptr, 
-				 Node * _parent = nullptr)			: l(_l), r(_r), parent(_parent), data(x)	{};
+				 Nodep _l = nullptr, 
+				 Nodep _r = nullptr, 
+				 Nodep _parent = nullptr) {
+			l = nullptr;
+			r = nullptr;
+			parent = nullptr;
+			data = x;
+		};
 		
-		~Node() {
-														if (l)
-														{
-															l->parent = nullptr;
-															delete l;
-														}
-														l = nullptr;
-														if (r)
-														{
-															r->parent = nullptr;
-															delete r;
-														}
-														if (parent)
-															delete parent;
-														parent = nullptr;
-														};
+		~Node() {}
 	};
 
 
-	template<class T>
+	template<class T, class NodeClass>
 	class SplayTree
 	{
+		static_assert(is_base_of<NodeBase, NodeClass>::value, "NodeClass must inherit NodeBase");
+		using NodeClassp = shared_ptr<NodeClass>;
 
-	private:
-		Node<T>							*root;
-		int								Size;
-		Node<T>							*selected;
+	protected:
+		NodeClassp	root;
+		int			Size;
+		NodeClassp	selected;
 
-		//Rotation functions. Used for tree balancing.
-		Node<T>							*rotate_left			(Node<T> *t);
-		Node<T>							*rotate_right			(Node<T> *t);
+		///Rotation functions. Used for tree balancing.
+		void		rotate_left				(NodeClassp &curRoot, NodeClassp &t);
+		void		rotate_right			(NodeClassp &curRoot, NodeClassp &t);
 
-		Node<T>							*max_elem				(Node<T> * t) const;
-		Node<T>							*min_elem				(Node<T> * t) const;
-		Node<T>							*successor				(Node<T> * t) const;
-		Node<T>							*predecessor			(Node<T> * t) const;
-		void							splay					(Node<T> * t);
-		pair<Node<T>*, Node<T>*>		split					(Node<T> *t, T &x);
-		Node<T>							*merge					(Node<T> *t1, Node<T> *t2);
+		NodeClassp		max_elem				(const NodeClassp &t) const;		///Find maximum element of subtree t.
+		NodeClassp		min_elem				(const NodeClassp &t) const;		///Find minimum element of subtree t.
+		NodeClassp		successor				(const NodeClassp &t) const;		///Find minimum element that is greater than t.
+		NodeClassp		predecessor				(const NodeClassp &t) const;		///Find maximum element that is less than t.
+		void							splay	(NodeClassp &t);
+		pair<NodeClassp, NodeClassp>	split	(NodeClassp &t, const T &x);
+		NodeClassp						merge	(NodeClassp &t1, NodeClassp &t2);
+		void							print	(NodeClassp &p, int level);			///Print one line of tree (horisontally oriented)
 
 	public:
-		Node<T>							*getSelected			()	const;
-		Node<T>							*getRoot				()	const;
-		int								getSize					()	const;
-		Node<T>							*insert					(T &x);
-		Node<T>							*search					(T &x);
-		bool							remove					(T &x);
-		void							remove					(Node<T> *&x);
-		void							clear					();
-
-		//Auxiliary function for tree output.
-		void							print(Node<T> *p, int level);
-
-										SplayTree				()									: root(nullptr), Size(0), selected(nullptr)	{	};
-										~SplayTree				()									{ clear(); };
+		NodeClassp&		getSelected		()	const; 					///Get last changed element.
+		NodeClassp&		getRoot			()	const;					///Get current tree root.
+		size_t			getSize			()	const;					///Returns current tree size (number of nodes).
+		NodeClassp		insert			(const T &x);				///Insert element x into tree. New element becomes root.
+		NodeClassp		insert			(NodeClassp &t, const T &x);///Insert element x into arbitrary subtree t. New element becomes t.
+		NodeClassp		search			(const T &x);				///Look up element x in the whole tree.
+		NodeClassp		search			(NodeClassp &t, const T &x);/// Look up element x in arbitrary subtree t.
+		bool			remove			(const T &x);				///Remove element x from the tree. Returns 1 - element is successfully removed. Returns 0 - element not found.
+		void			remove			(NodeClassp &x);			///Remove node from the tree.
+		void			clear			();							///Erase all nodes and set size to 0.
+		void			print			();							///Print tree to the console (horizontally oriented)
+		SplayTree	()	: root(nullptr), Size(0), selected(nullptr)	{	};
+		~SplayTree	()	{ clear(); };
 		
 		template<class T>
-		friend	class					BpTreeHandler;
+		friend	class	BpTreeHandler;
 	};
 
 
 
-	template<class T>
+	template<class T, class NodeClass>
 	class BpTreeHandler
 	{
 
 	private:
 
 	public:
-		//This function tests all SplayTree main functions.
-		//Gets user's input from console and visualizes changes in a user-friendly way.
-		//Parameter Tr is used for working with an existing tree to save result.
-		//If Tr is not specified, tree is created automatically and gets deleted.
-		void							getInput						(SplayTree<T> *Tr = nullptr);
+		///This function tests all SplayTree main functions.
+		///Gets user's input from console and visualizes changes in a user-friendly way.
+		///Parameter Tr is used for working with an existing tree to save result.
+		///If Tr is not specified, tree is created automatically and gets deleted after returning from function.
+		void	getInput	(SplayTree<T, NodeClass> *Tr = nullptr);
 	};
 
 
@@ -103,222 +106,203 @@ namespace SplTr
 }
 
 
-//Returns last changed element.
-template<class T>
-inline SplTr::Node<T>* SplTr::SplayTree<T>::getSelected() const
+
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::getSelected() const
 {
 	return selected;
 }
 
-//Returns current tree root.
-template<class T>
-SplTr::Node<T>* SplTr::SplayTree<T>::getRoot() const
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::getRoot() const
 {
 	if (root)
 		return root;
 	else return nullptr;
 }
 
-//Returns current tree size (number of nodes).
-template<class T>
-int SplTr::SplayTree<T>::getSize() const
+template<class T, class NodeClass>
+inline int Tree::SplayTree<T, NodeClass>::getSize() const
 {
 	return Size;
 }
 
+//+
 
-//For balancing.
-template<class T>
-inline SplTr::Node<T>* SplTr::SplayTree<T>::rotate_left(Node<T>* t)
+template<class T, class NodeClass>
+inline void Tree::SplayTree<T, NodeClass>::rotate_left(NodeClassp &curRoot, NodeClassp &t)
 {
-	Node<T> *pivot = t->r;
+	NodeClassp pivot = t->r;
 	t->r = pivot->l;
 	if (pivot->l)
 		pivot->l->parent = t;
 	pivot->l = t;
 	pivot->parent = t->parent;
-	if (t == root)
-		root = pivot;
+	if (t == curRoot)
+		curRoot = pivot;
 	else {
 		if (t->parent->l == t)
 			t->parent->l = pivot;
 		else t->parent->r = pivot;
 	}
 	t->parent = pivot;
-	return pivot;
 }
 
-
-//For balancing.
-template<class T>
-inline SplTr::Node<T>* SplTr::SplayTree<T>::rotate_right(Node<T>* t)
+template<class T, class NodeClass>
+inline void Tree::SplayTree<T, NodeClass>::rotate_right(NodeClassp &curRoot, NodeClassp &t)
 {
-	Node<T> *pivot = t->l;
+	NodeClassp pivot = t->l;
 	t->l = pivot->r;
 	if (pivot->r)
 		pivot->r->parent = t;
 	pivot->r = t;
 	pivot->parent = t->parent;
-	if (t == root)
-		root = pivot;
+	if (t == curRoot)
+		curRoot = pivot;
 	else {
 		if (t->parent->l == t)
 			t->parent->l = pivot;
 		else t->parent->r = pivot;
 	}
 	t->parent = pivot;
-	return pivot;
 }
 
-
-//Find maximum element of subtree t.
-template<class T>
-inline SplTr::Node<T>* SplTr::SplayTree<T>::max_elem(Node<T>* t) const
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::max_elem(const NodeClassp &t) const
 {
-	Node<T> *p = t;
+	NodeClassp p = t;
 	while (p->r)
 		p = p->r;
 	return p;
 }
 
-
-//Find minimum element of subtree t.
-template<class T>
-inline SplTr::Node<T>* SplTr::SplayTree<T>::min_elem(Node<T>* t) const
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::min_elem(const NodeClassp &t) const
 {
-	Node<T> *p = t;
+	NodeClassp p = t;
 	while (p->l)
 		p = p->l;
 	return p;
 }
 
-
-//Find minimal element that is greater than t.
-template<class T>
-inline SplTr::Node<T>* SplTr::SplayTree<T>::successor(Node<T>* t) const
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::successor(const NodeClassp &t) const
 {
 	if (!t)
 		return nullptr;
 	else if (t->r)
 		return min_elem(t->r);
-	Node<T> *s = t;
+	NodeClassp s = t;
 	while (s != t->parent->l || s != root)
 		s = s->parent;
 	return s;
 }
 
-
-//Find maximum element that is less than t.
-template<class T>
-inline SplTr::Node<T>* SplTr::SplayTree<T>::predecessor(Node<T>* t) const
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::predecessor(const NodeClassp &t) const
 {
 	if (!t)
 		return nullptr;
 	else if (t->l)
 		return max_elem(t->l);
-	Node<T> *s = t;
+	NodeClassp s = t;
 	while (s != t->parent->r || s != root)
 		s = s->parent;
 	return s;
 }
 
-
-//Not for usage.
-//Main balancing procedure.
-template<class T>
-inline void SplTr::SplayTree<T>::splay(Node<T>* t)
+template<class T, class NodeClass>
+inline void Tree::SplayTree<T, NodeClass>::splay(NodeClassp &t)
 {
 	while (t != root)
 	{
+		NodeClassp p = t->parent;
+		NodeClassp g = t->parent->parent;
 		if (t->parent == root)															//	Zig
 		{
-			if (t->parent->l == t)
-				rotate_right(t->parent);
+			if (p->l == t)
+				rotate_right(p);
 			else 
-				rotate_left(t->parent);
+				rotate_left(p);
 		}
-		else if (t->parent->l == t && t->parent->parent->l == t->parent)				//	Zig-Zig
+		else if (p->l == t && g->l == p)				//	Zig-Zig
 		{
-			rotate_right(t->parent->parent);
-			rotate_right(t->parent);
-		}
-		else if (t->parent->r == t && t->parent->parent->r == t->parent)
-		{
-			rotate_left(t->parent->parent);
-			rotate_left(t->parent);
-		}
-		else if (t->parent->l == t && t->parent->parent->r == t->parent)				//	Zig-Zag
-		{
-			Node<T>*p = t->parent->parent;
-
-			rotate_right(t->parent);
-			rotate_left(p);
-
-		}
-		else if (t->parent->r == t && t->parent->parent->l == t->parent)
-		{
-			Node<T>*p = t->parent->parent;
-			rotate_left(t->parent);
 			rotate_right(p);
+			rotate_right(g);
+		}
+		else if (p->r == t && g->r == p)
+		{
+			rotate_right(p);
+			rotate_left(g);
+		}
+		else if (p->l == t && g->r == t->parent)				//	Zig-Zag
+		{
+			rotate_right(p);
+			rotate_left(g);
+
+		}
+		else if (p->r == t && g->l == p)
+		{
+			rotate_left(p);
+			rotate_right(g);
 		}
 	}
 
 
 }
 
-//Not for usage.
-//Is used for insertion.
-template<class T>
-inline pair<SplTr::Node<T> *, SplTr::Node<T> *> SplTr::SplayTree<T>::split(Node<T>* t, T &x)
+template<class T, class NodeClass>
+inline pair<typename Tree::SplayTree<T, NodeClass>::NodeClassp, typename Tree::SplayTree<T, NodeClass>::NodeClassp> Tree::SplayTree<T, NodeClass>::split(NodeClassp &t, const T &x)
 {
 	if (!t)
-		return pair<Node<T> *, Node<T> *>({nullptr, nullptr});
-	Node<T> *p = search(x);
+		return pair<NodeClassp, NodeClassp>({nullptr, nullptr});
+	NodeClassp p = search(t, x);
 	if (p->data <= x)
 	{
-		Node<T> *r = root->r;
+		NodeClassp r = root->r;
 		if (root->r)
 		{
 			root->r->parent = nullptr;
 			root->r = nullptr;
 		}
-		return pair<Node<T> *, Node<T> *>({ p, r });
+		return pair<NodeClassp , NodeClassp>({ p, r });
 	}
 	else
 	{
-		Node<T> *l = root->l;
+		NodeClassp l = root->l;
 		if (root->l)
 		{
 			root->l->parent = nullptr;
 			root->l = nullptr;
 		}
-		return pair<Node<T> *, Node<T> *>({ l, p });
+		return pair<NodeClassp , NodeClassp>({ l, p });
 	}
 }
 
-
-//Not for usage.
-//Is used for removal.
-template<class T>
-inline SplTr::Node<T> * SplTr::SplayTree<T>::merge(Node<T>* t1, Node<T>* t2)
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp  Tree::SplayTree<T, NodeClass>::merge(NodeClassp &t1, NodeClassp &t2)
 {
 	if (!t1)
 		return t2;
 	if (!t2)
 		return t1;
-	Node<T> * p = max_elem(t1);
-	splay(p);
+	NodeClassp p = max_elem(t1);
+	splay(t1, p);
 	p->r = t2;
 	t2->parent = p;
 	return p;
 }
 
-
-//Look for element x in the tree.
-template<class T>
-inline SplTr::Node<T> * SplTr::SplayTree<T>::search(T & x)
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp  Tree::SplayTree<T, NodeClass>::search(const T &x)
 {
-	Node<T> *p = root;
+	return search(root, x);
+}
+
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::search(NodeClassp & t, const T & x)
+{
+	NodeClassp p = t;
 	while (p != nullptr)
 	{
 		if (x > p->data)
@@ -326,7 +310,7 @@ inline SplTr::Node<T> * SplTr::SplayTree<T>::search(T & x)
 			if (p->r)
 				p = p->r;
 			else {
-				splay(p);
+				splay(t, p);
 				if (p->data == x)
 					selected = p;
 				else selected = nullptr;
@@ -338,7 +322,7 @@ inline SplTr::Node<T> * SplTr::SplayTree<T>::search(T & x)
 			if (p->l)
 				p = p->l;
 			else {
-				splay(p);
+				splay(t, p);
 				if (p->data == x)
 					selected = p;
 				else selected = nullptr;
@@ -349,7 +333,7 @@ inline SplTr::Node<T> * SplTr::SplayTree<T>::search(T & x)
 		{
 			while (p->r && p->r->data == p->data)
 				p = p->r;
-			splay(p);
+			splay(t, p);
 			if (p->data == x)
 				selected = p;
 			else selected = nullptr;
@@ -357,98 +341,85 @@ inline SplTr::Node<T> * SplTr::SplayTree<T>::search(T & x)
 		}
 	}
 	selected = nullptr;
-	return nullptr;
+	return p;
 }
 
-
-
-
-//Insert element x into the tree.
-//New element becomes root.
-template<class T>
-SplTr::Node<T> *SplTr::SplayTree<T>::insert(T & x)
+template<class T, class NodeClass>
+typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::insert(const T &x)
 {
-	if (!root)
+	return insert(root, x);
+}
+
+template<class T, class NodeClass>
+inline typename Tree::SplayTree<T, NodeClass>::NodeClassp Tree::SplayTree<T, NodeClass>::insert(NodeClassp & t, const T & x)
+{
+	if (!t)
 	{
-		root = new Node<T>(x);
-		Size = 1;
-		selected = root;
-		return root;
+		t = make_shared<NodeClass>(x);
+		++Size;
+		selected = t;
+		return t;
 	}
-	Node<T> *p = root;
+	pair<NodeClassp, NodeClassp> subtrees = split(t, x);
 
-	pair<Node<T> *, Node<T> *> subtrees = split(root, x);
-	root = new Node<T>(x);
+	t = make_shared<NodeClass>(x);	
+	
+	t->l = subtrees.first;
+	if (t->l)
+		t->l->parent = t;
 
-	root->l = subtrees.first;
-	if (root->l)
-		root->l->parent = root;
+	t->r = subtrees.second;
+	if (t->r)
+		t->r->parent = t;
 
-	root->r = subtrees.second;
-	if (root->r)
-		root->r->parent = root;
+
 	++Size;
-	selected = root;
-	return root;
+	selected = t;
+	return t;
 }
 
-
-//Remove element x from the tree.
-//Returns 1 - element is successfully removed.
-//Returns 0 - element not found.
-template<class T>
-inline bool SplTr::SplayTree<T>::remove(T & x)
+template<class T, class NodeClass>
+inline bool Tree::SplayTree<T, NodeClass>::remove(const T &x)
 {
-	Node<T> *p = search(x);
+	NodeClassp p = search(x);
 	if (!p || p->data != x)
 	{
 		selected = nullptr;
-		return 0;
+		return false;
 	}
 	remove(p);
-	return 1;
+	return true;
 }
 
-
-//Remove node from the tree.
-template<class T>
-inline void SplTr::SplayTree<T>::remove(Node<T> * &x)
+template<class T, class NodeClass>
+inline void Tree::SplayTree<T, NodeClass>::remove(NodeClassp &x)
 {
 	if (!x)
 		return;
 	root = merge(x->l, x->r);
 	x->parent = x->l = x->r = nullptr;
-	delete(x);
 	x = nullptr;
 	selected = nullptr;
 	--Size;
 }
 
-//Release the memory.
-template<class T>
-inline void SplTr::SplayTree<T>::clear()
+template<class T, class NodeClass>
+inline void Tree::SplayTree<T, NodeClass>::clear()
 {
-	if (root)
-		delete(root);
 	root = nullptr;
 	Size = 0;
 	selected = nullptr;
 }
 
-
-
-
-template<class T>
-ostream & operator<<(ostream & c, SplTr::SplayTree<T>& tr)
+template<class T, class NodeClass>
+inline void Tree::SplayTree<T, NodeClass>::print()
 {
-	tr.print(tr.getRoot(), 0);
+	print(root, 0);
 	cout << endl;
-	return c;
 }
 
-//Print one line of tree. (horizontal oriented)
-template<class T>
-void SplTr::SplayTree<T>::print(Node<T> *p, int level)
+template<class T, class NodeClass>
+void Tree::SplayTree<T, NodeClass>::print(const NodeClassp &p, int level)
 {
 	if (p)
 	{
@@ -468,9 +439,8 @@ void SplTr::SplayTree<T>::print(Node<T> *p, int level)
 	return;
 }
 
-//
-template<class T>
-inline void SplTr::BpTreeHandler<T>::getInput(SplayTree<T> *Tr)
+template<class T, class NodeClass>
+inline void Tree::BpTreeHandler<T, NodeClass>::getInput(SplayTree<T, NodeClass> *Tr)
 {
 	bool existing = true;
 	if (!Tr)

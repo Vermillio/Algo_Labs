@@ -1,0 +1,3 @@
+C:/Users/morga/source/repos/2_course_2_sem/algo_labs/SplayTree/CMakeFiles/SplayTree.dir
+C:/Users/morga/source/repos/2_course_2_sem/algo_labs/SplayTree/CMakeFiles/ALL_BUILD.dir
+C:/Users/morga/source/repos/2_course_2_sem/algo_labs/SplayTree/CMakeFiles/ZERO_CHECK.dir

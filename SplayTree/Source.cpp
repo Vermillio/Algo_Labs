@@ -4,12 +4,10 @@
 #include "SplayTree.h"
 
 using namespace std;
-using namespace SplTr;
+using namespace Tree;
 
 int main()
 {
-	InputHandler<int> hnd;
-	hnd.getInput();
 	system("pause");
 	return 0;
 }
