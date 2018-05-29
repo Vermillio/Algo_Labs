@@ -111,7 +111,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CsvParser.h" />
     <ClInclude Include="FibonacciHeap.h" />
+    <ClInclude Include="Movie.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
