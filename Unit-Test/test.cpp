@@ -14,7 +14,5 @@ TEST(TestCaseName, BinomialTreeMainTest) {
 	
 	ASSERT_EQ(heap.checkCorrect(), 0);
 
-	//for (size_t i = 0; i < repeat / 2; ++i)
-	//	heap.remove((size_t)rand() % heap.degree());
-
+	heap.clear();
 }
