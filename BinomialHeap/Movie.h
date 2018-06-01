@@ -49,7 +49,7 @@ public:
 	Movie(string &t_title, int t_voted) : title(t_title), voted(t_voted) {};
 };
 
-istream & operator >> (istream & c, Movie & x) {
+inline std::istream & operator >> (std::istream & c, Movie & x) {
 	string title;
 	cout << "title: ";
 	cin >> title;
@@ -61,7 +61,7 @@ istream & operator >> (istream & c, Movie & x) {
 	return c;
 };
 
-ostream & operator << (ostream & c, const Movie & x) {
+inline std::ostream & operator << (std::ostream & c, const Movie & x) {
 	cout << "title: ";
 	cout << x.getTitle();
 	cout << "voted: ";

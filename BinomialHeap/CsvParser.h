@@ -6,7 +6,7 @@
 
 using namespace std;
 
-namespace Parse
+namespace parse
 {
 	//	template<class T1, class T2>
 	class CsvParser

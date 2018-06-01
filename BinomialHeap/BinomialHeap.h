@@ -17,8 +17,8 @@ namespace heap {
 
 		void insert(T key);
 		void remove(size_t ind);
-		T getMin();
-		T extractMin();
+		T getMin(bool &success, int &index);
+		T extractMin(bool &success);
 		bool decreaseKey(size_t ind, T new_val);
 		void clear();
 		size_t degree()	const { return Size; };
@@ -57,31 +57,42 @@ namespace heap {
 	template<class T>
 	inline void BinomialHeap<T>::remove(size_t ind)
 	{
-		if (ind >= Size)
+		if (ind >= Size || ind<0)
 			return;
-		decreaseKey(ind, -numeric_limits<T>::infinity());
-		extractMin();
-		--Size;
+		decreaseKey(ind, numeric_limits<T>::min());
+		bool success;
+		extractMin(success);
 	}
 
 	template<class T>
-	inline T BinomialHeap<T>::getMin()
+	inline T BinomialHeap<T>::getMin(bool &success, int &index)
 	{
 		size_t min_ind = getMin_proc();
-		if (min_ind < 0)
+		if (min_ind < 0) {
+			success = false;
 			return T();
+		}
+		success = true;
+		index = min_ind;
 		return binTrees[min_ind].keys[0];
 	}
 
 	template<class T>
-	inline T BinomialHeap<T>::extractMin()
+	inline T BinomialHeap<T>::extractMin(bool &success)
 	{
-		size_t min_ind = getMin();
-		if (min_ind < 0)
+		if (Size == 0) {
+			success = false;
 			return T();
+		}
+
+		int min_ind;
+		T min_elem = getMin(success, min_ind);
+		if (!success) {
+			return T();
+		}
 
 		vector<BinomialTree> newTrees;
-		size_t chunk_size = binTrees[min_ind].keys.degree() / 2;
+		size_t chunk_size = binTrees[min_ind].keys.size() / 2;
 		for (size_t cur_degree = binTrees[min_ind].degree; cur_degree > 0; --cur_degree)
 		{
 			vector<T> tmp = vector<T>(binTrees[min_ind].keys.begin() + chunk_size, binTrees[min_ind].keys.end());
@@ -93,12 +104,17 @@ namespace heap {
 		T min_key = binTrees[min_ind].keys[0];
 		binTrees.erase(binTrees.begin() + min_ind);
 		union_main(newTrees);
+		success = true;
+		--Size;
 		return min_key;
 	}
 
 	template<class T>
 	inline bool BinomialHeap<T>::decreaseKey(size_t ind, T new_val)
 	{
+		if (ind >= Size)
+			return false;
+
 		int tree_ind = -1;
 		int sum = 0;
 		
@@ -107,7 +123,7 @@ namespace heap {
 			sum+= pow(2, binTrees[tree_ind].degree);
 		} while ((int)ind - sum >= 0);
 
-		size_t key_ind = tree_ind != 0 ? ind % (sum - binTrees[tree_ind].keys.degree()) : ind;
+		size_t key_ind = tree_ind != 0 ? ind % (sum - binTrees[tree_ind].keys.size()) : ind;
 		if (binTrees[tree_ind].keys[key_ind] <= new_val)
 			return false;
 		binTrees[tree_ind].keys[key_ind] = new_val;
@@ -146,10 +162,10 @@ namespace heap {
 	template<class T>
 	inline size_t BinomialHeap<T>::getMin_proc()
 	{
-		if (binTrees.degree() == 0)
+		if (binTrees.size() == 0)
 			return -1;
 		size_t min_ind = 0;
-		for (int i = 0; i < binTrees.degree(); ++i)
+		for (int i = 0; i < binTrees.size(); ++i)
 		{
 			if (binTrees[i].keys[0] < binTrees[min_ind].keys[0])
 				min_ind = i;
