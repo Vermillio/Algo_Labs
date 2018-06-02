@@ -11,7 +11,9 @@
 using namespace std;
 
 
-namespace pset {
+namespace set {
+
+
 
 	string get_cd();
 
@@ -22,26 +24,19 @@ namespace pset {
 		using PSrb = PersistentSet_rb;
 		using PSrb_tmpl = PersistentSet_rb<T, func>;
 
-		struct node;
-		using nodep = shared_ptr<node>;
-		class InputHandler
-		{
-		private:
-			//Image saving procedure.
-			void write_proc(nodep p, ostream &file, int label);
+		struct Node;
+		using Nodep = shared_ptr<Node>;
 
-		public:
-			//Saves tree as image in PNG format and shows  on screen.
-			void makeImage(PSrb_tmpl &Set, string filename);
+		//Saves tree as image in PNG format and shows  on screen.
+		void makeImage(string filename);
 
-			//Gets input from console.
-			//Saves changes if executed on existing tree.
-			void getInput(PSrb_tmpl *Set = nullptr);
+		//Gets input from console.
+		//Saves changes if executed on existing tree.
+		void getInput();
 
-			//Checks order of elements in the tree.
-			//Returns number of errors.
-			int checkOrder(PSrb_tmpl &Set);
-		};
+		//Checks order of elements in the tree.
+		//Returns number of errors.
+		int checkOrder();
 
 		PersistentSet_rb() : Size(0) {};
 
@@ -49,7 +44,7 @@ namespace pset {
 		{
 		public:
 
-			TreeIterator(nodep _ptr, nodep _root) : ptr(_ptr), root(_root) {};
+			TreeIterator(Nodep _ptr, Nodep _root) : ptr(_ptr), root(_root) {};
 
 			TreeIterator& operator++();
 			TreeIterator& operator--();
@@ -62,11 +57,11 @@ namespace pset {
 			bool operator!=(TreeIterator &it) const;
 		private:
 
-			nodep successor();
-			nodep predecessor();
+			Nodep successor();
+			Nodep predecessor();
 
-			nodep ptr;
-			nodep root;
+			Nodep ptr;
+			Nodep root;
 		};
 
 		TreeIterator begin();
@@ -74,31 +69,32 @@ namespace pset {
 
 		bool insert(const T &x);
 		bool remove(const T &x);
-		nodep search(T &x);
+		Nodep search(T &x);
 		void clear();
 		bool empty() const;
 		void print() const;
-		void consoleOutput(nodep p, int level) const;
+		void consoleOutput(Nodep p, int level) const;
+		size_t treeSize() const;
 
 	private:
-		struct node {
+		struct Node {
 			bool isRed;
-			nodep l, r;
+			Nodep l, r;
 			T data;
 
-			node() : isRed(true), l(nullptr), r(nullptr) {};
-			node(node *t) : data(t->data), isRed(t->isRed), l(t->l), r(t->r) {};
-			node(nodep t) : data(t->data), isRed(t->isRed), l(t->l), r(t->r) {};
-			node(T _x) : data(_x), isRed(true), l(nullptr), r(nullptr) {};
-			node(T _x, bool _isRed, nodep _l, nodep _r) : data(_x), isRed(_isRed), l(_l), r(_r) {};
-			~node() {};
+			Node() : isRed(true), l(nullptr), r(nullptr) {};
+			Node(Node *t) : data(t->data), isRed(t->isRed), l(t->l), r(t->r) {};
+			Node(Nodep t) : data(t->data), isRed(t->isRed), l(t->l), r(t->r) {};
+			Node(T _x) : data(_x), isRed(true), l(nullptr), r(nullptr) {};
+			Node(T _x, bool _isRed, Nodep _l, Nodep _r) : data(_x), isRed(_isRed), l(_l), r(_r) {};
+			~Node() {};
 
-			nodep clone() {
-				nodep t;
-				t.reset(new node(this));
+			Nodep clone() {
+				Nodep t;
+				t.reset(new Node(this));
 				return t;
 			}
-			void swapRed(nodep &t) {
+			void swapRed(Nodep &t) {
 				bool tmp = isRed;
 				isRed = t->isRed;
 				t->isRed = tmp;
@@ -106,31 +102,32 @@ namespace pset {
 		};
 
 		size_t Size;
-		vector<nodep> roots;
+		vector<Nodep> roots;
 
-		size_t size() const;
-		nodep rotate_l(nodep t);
-		nodep rotate_r(nodep t);
-		nodep rotate_twice_l(nodep t);
-		nodep rotate_twice_r(nodep t);
-		void checkInsert(vector<nodep> &path);
-		void checkRemove(vector<nodep> &path);
+		Nodep rotate_l(Nodep t);
+		Nodep rotate_r(Nodep t);
+		Nodep rotate_twice_l(Nodep t);
+		Nodep rotate_twice_r(Nodep t);
+		void checkInsert(vector<Nodep> &path);
+		void checkRemove(vector<Nodep> &path);
 
-		void copy_path(const T &x, vector<nodep> &path, bool insert = true);
-		void find_path(const T &x, vector<nodep> &path);
-		void remove_node(nodep parent, bool left);
-		nodep predecessor_p(nodep t);
+		void copy_path(const T &x, vector<Nodep> &path, bool insert = true);
+		void find_path(const T &x, vector<Nodep> &path);
+		void remove_node(Nodep parent, bool left);
+		Nodep predecessor_p(Nodep t);
 
+		//Image saving procedure.
+		void write_proc(Nodep p, ostream &file, int label);
 	};
 
 	template<class T, typename func>
-	using PSrb_nodep = typename PersistentSet_rb<T, func>::nodep;
+	using PSrb_nodep = typename PersistentSet_rb<T, func>::Nodep;
 
 	template<class T, typename func>
 	using PSrb_TreeIterator = typename PersistentSet_rb<T, func>::TreeIterator;
 
 	template<class T, typename func>
-	inline size_t PersistentSet_rb<T, func>::size() const
+	inline size_t PersistentSet_rb<T, func>::treeSize() const
 	{
 		return Size;
 	}
@@ -138,7 +135,7 @@ namespace pset {
 	template<class T, typename func>
 	PSrb_nodep<T, func> PersistentSet_rb<T, func>::rotate_l(PSrb_nodep<T, func> t)
 	{
-		nodep pivot = t->r;
+		Nodep pivot = t->r;
 		t->r = pivot->l;
 		pivot->l = t;
 		return pivot;
@@ -147,7 +144,7 @@ namespace pset {
 	template<class T, typename func>
 	PSrb_nodep<T, func> PersistentSet_rb<T, func>::rotate_r(PSrb_nodep<T, func> t)
 	{
-		nodep pivot = t->l;
+		Nodep pivot = t->l;
 		t->l = pivot->r;
 		pivot->r = t;
 		return pivot;
@@ -178,14 +175,14 @@ namespace pset {
 		size_t i = path.size() - 1;
 		while (i>=2)
 		{
-			nodep t = path[i];
-			nodep p = path[i - 1];
+			Nodep t = path[i];
+			Nodep p = path[i - 1];
 			if (p->isRed == false)
 				break;
 			if (i < 3)
 				break;
-			nodep g = path[i - 2];
-			nodep q = path[i - 3];
+			Nodep g = path[i - 2];
+			Nodep q = path[i - 3];
 			if (g) {
 					if (p == g->l && p->isRed && (g->r==nullptr || g->r->isRed == false))
 					{
@@ -246,14 +243,14 @@ namespace pset {
 		if (path.size()<=1)
 			return;
 		size_t i = path.size() - 1;
-		nodep t = path[i];
+		Nodep t = path[i];
 		while (i >= 3)
 		{
 			t = path[i];
-			nodep p = path[i-1];
-			nodep g = path[i - 2];
+			Nodep p = path[i-1];
+			Nodep g = path[i - 2];
 			bool left = g->l == p;
-			nodep w = t == p->r ? p->l : p->r;
+			Nodep w = t == p->r ? p->l : p->r;
 			if (!w)
 			{
 				--i;
@@ -318,11 +315,31 @@ namespace pset {
 	}
 
 	template<class T, typename func>
+	inline void PersistentSet_rb<T, func>::makeImage(string filename)
+	{
+		ofstream fout("tmgv", ios::out);
+		fout << "digraph " + filename + " {" << endl;
+		write_proc(roots.back(), fout, 1);
+		fout << "}" << endl;
+		fout.close();
+		string fname = filename + ".png";
+		//convert_dot_to_png("C:/Users/morga/source/repos/2_course_2_sem/algo_labs/B+_Tree/B+_Tree/tmgv", fname);
+		string cd = get_cd();
+		string command = "dot -Tpng " + cd + "/tmgv > " + cd + "/" + fname;
+		SetCurrentDirectory((cd + "/bin").c_str());
+		system(command.c_str());
+		SetCurrentDirectory(cd.c_str());
+		system(fname.c_str());
+		system("del tmgv");
+		_getch();
+	}
+
+	template<class T, typename func>
 	inline PSrb_TreeIterator<T, func> PersistentSet_rb<T, func>::begin()
 	{
 		if (roots.size() == 0 || !roots.back())
 			return TreeIterator(nullptr, nullptr);
-		nodep p = roots.back();
+		Nodep p = roots.back();
 		while (p->l)
 			p = p->l;
 		return TreeIterator(p, roots.back());
@@ -342,16 +359,16 @@ namespace pset {
 	{
 		if (roots.size() == 0 || !roots.back())
 		{
-			nodep newNode(new node(x));
+			Nodep newNode  = make_shared<Node>(x);
 			roots.push_back(newNode);
 			Size = 1;
 			return true;
 		}
-		nodep p = roots.back();
-		vector<nodep> path;
+		Nodep p = roots.back();
+		vector<Nodep> path;
 		size_t curSize = Size;
 		copy_path(x, path, true);
-		nodep tmpRoot(new node(0));
+		Nodep tmpRoot=make_shared<Node>(0);
 		tmpRoot->r = path.front();
 		path.insert(path.begin(), tmpRoot);
 		checkInsert(path);
@@ -367,7 +384,7 @@ namespace pset {
 	{
 		if (roots.size() == 0 || Size==0)
 			return false;
-		nodep p = roots.back();
+		Nodep p = roots.back();
 		if (!p)
 			return false;
 		if (Size == 1)
@@ -375,11 +392,11 @@ namespace pset {
 			roots.push_back(nullptr);
 			return true;
 		}
-		vector<nodep> path;
+		vector<Nodep> path;
 		copy_path(x, path, false);
 		if (path.size() == 0)
 			return false;
-		nodep tmpRoot(new node(0));
+		Nodep tmpRoot(new Node(0));
 		tmpRoot->r = path[0];
 		path.insert(path.begin(), tmpRoot);
 		bool dir = path[path.size() - 2]->l && path[path.size() - 2]->l->data == x;
@@ -403,7 +420,7 @@ namespace pset {
 				return roots.back();
 			else return nullptr;
 		}
-		nodep p = roots.back();
+		Nodep p = roots.back();
 		while (p)
 		{
 			if (p->data < x)
@@ -434,7 +451,7 @@ namespace pset {
 		if (roots.size() == 0)
 			return;
 		path.clear();
-		nodep p = roots.back();
+		Nodep p = roots.back();
 		while (p)
 		{
 			path.push_back(p);
@@ -454,7 +471,7 @@ namespace pset {
 						path.clear();
 						return;
 					}
-					nodep tmp(new node(x));
+					Nodep tmp(new Node(x));
 					path.back()->l = tmp;
 					path.push_back(tmp);
 					++Size;
@@ -471,7 +488,7 @@ namespace pset {
 					path.clear();
 					return;
 				}
-				nodep tmp(new node(x));
+				Nodep tmp(new Node(x));
 				path.back()->r = tmp;
 				path.push_back(tmp);
 				++Size;
@@ -483,7 +500,7 @@ namespace pset {
 	template<class T, typename func>
 	inline void PersistentSet_rb<T, func>::find_path(const T &x, vector<PSrb_nodep<T, func>> &path)
 	{
-		nodep p = roots.back();
+		Nodep p = roots.back();
 		path.clear();
 //		path.push_back(p);
 		while (p)
@@ -511,7 +528,7 @@ namespace pset {
 	template<class T, typename func>
 	inline void PersistentSet_rb<T, func>::remove_node(PSrb_nodep<T, func> parent, bool left)
 	{
-		nodep t = left ? parent->l : parent->r;
+		Nodep t = left ? parent->l : parent->r;
 		if (t->l == nullptr)
 		{
 			if (left)
@@ -526,7 +543,7 @@ namespace pset {
 		}
 		else {
 //			bool dir;
-			nodep p = predecessor_p(t);
+			Nodep p = predecessor_p(t);
 			if (p)
 			{
 				swap(t==p ? t->l->data : p->r->data, t->data);
@@ -540,8 +557,8 @@ namespace pset {
 	{
 		if (!t || !t->l)
 			return nullptr;
-		nodep p = t;
-		nodep c = t->l;
+		Nodep p = t;
+		Nodep c = t->l;
 		while (c->r)
 		{
 			p = c;
@@ -551,7 +568,7 @@ namespace pset {
 	}
 
 	template<class T, typename func>
-	inline void PersistentSet_rb<T, func>::InputHandler::write_proc(PSrb_nodep<T, func> p, ostream & file, int label)
+	inline void PersistentSet_rb<T, func>::write_proc(PSrb_nodep<T, func> p, ostream & file, int label)
 	{
 		if (!p)
 			return;
@@ -576,35 +593,8 @@ namespace pset {
 	}
 
 	template<class T, typename func>
-	inline void PersistentSet_rb<T, func>::InputHandler::makeImage(PSrb_tmpl & Set, string filename)
+	inline void PersistentSet_rb<T, func>::getInput()
 	{
-		ofstream fout("tmp.gv", ios::out);
-		fout << "digraph " + filename + " {" << endl;
-		write_proc(Set.roots.back(), fout, 1);
-		fout << "}" << endl;
-		fout.close();
-		string fname = filename + ".png";
-		//convert_dot_to_png("C:/Users/morga/source/repos/2_course_2_sem/algo_labs/B+_Tree/B+_Tree/tmp.gv", fname);
-		string cd = get_cd();
-		string command = "dot -Tpng " + cd + "/tmp.gv > " + cd + "/" + fname;
-		SetCurrentDirectory((cd + "/bin").c_str());
-		system(command.c_str());
-		SetCurrentDirectory(cd.c_str());
-		system(fname.c_str());
-		//system("del tmp.gv");
-		_getch();
-	}
-
-	template<class T, typename func>
-	inline void PersistentSet_rb<T, func>::InputHandler::getInput(PSrb_tmpl* Set)
-	{
-		bool existing = true;
-		if (Set == nullptr)
-		{
-			Set = new PSrb_tmpl();
-			existing = false;
-		}
-
 		int choise = 0;
 		string message = "";
 		do
@@ -612,8 +602,11 @@ namespace pset {
 			system("cls");
 			cout << message << endl;
 			cout << "---TREE---" << endl;
-			cout << "SIZE IS " << Set->size() << " NODES." << endl;
-			Set->print();
+			cout << "SIZE IS " << treeSize() << " NODES." << endl;
+			if (treeSize() > 50)
+				cout << "Size too big to print tree. You can write it to image file" << endl;
+			else
+				print();
 			cout << endl;
 			cout << "1 - INSERT, 2 - REMOVE, 3 - SEARCH, 4 - CLEAR, 5 - WRITE IMAGE FILE (GRAPHVIZ), 6 - TEST ORDER WITH ITERATOR, <ANYTHING ELSE> - EXIT" << endl;
 			cout << ">>>";
@@ -625,14 +618,14 @@ namespace pset {
 			case 1:
 				cout << "Enter data to insert >>>";
 				cin >> data;
-				Set->insert(data);
+				insert(data);
 				message = "Successfully inserted " + to_string(data) + ".";
 				break;
 			case 2:
 			{
 				cout << "Enter data to remove >>>";
 				cin >> data;
-				bool success = Set->remove(data);
+				bool success = remove(data);
 				if (success)
 					message = "Successfully removed " + to_string(data) + ".";
 				else message = "Not found " + to_string(data) + ".";
@@ -642,7 +635,7 @@ namespace pset {
 			{
 				cout << "Enter data to search for >>>";
 				cin >> data;
-				PSrb_nodep<T, func> found = Set->search(data);
+				PSrb_nodep<T, func> found = search(data);
 				if (!found)
 					message = "Not found " + to_string(data) + ".";
 				else
@@ -650,7 +643,7 @@ namespace pset {
 				break;
 			}
 			case 4:
-				Set->clear();
+				clear();
 				message = "Tree is now empty.";
 				break;
 			case 5:
@@ -658,30 +651,29 @@ namespace pset {
 				string filename;
 				cout << "Enter file name to save image (without extenstion) >>>";
 				cin >> filename;
-				makeImage(*Set, filename);
+				makeImage(filename);
 				break;
 			}
 			case 6:
 			{
-				int errors_num = checkOrder(*Set);
+				int errors_num = checkOrder();
 				message = "Test complete. Number of errors : " + to_string(errors_num) + ".";
 			}
 			default:
 				break;
 			}
+			cin.ignore(cin.rdbuf()->in_avail());
+			cin.clear();
 		} while (choise >= 1 && choise <= 6);
-		if (!existing)
-		{
-			delete Set;
-		}
 	}
 
+
 	template<class T, typename func>
-	inline int PersistentSet_rb<T, func>::InputHandler::checkOrder(PSrb_tmpl &Set)
+	inline int PersistentSet_rb<T, func>::checkOrder()
 	{
 		int error_num = 0;
 
-		for (PSrb_TreeIterator<T, func> it = Set.begin()+1; it != Set.end(); ++it)
+		for (PSrb_TreeIterator<T, func> it = begin()+1; it != end(); ++it)
 		{
 			if (*(it - 1) > *it)
 				++error_num;
@@ -726,7 +718,7 @@ namespace pset {
 	template<class T, typename func>
 	inline PSrb_TreeIterator<T, func> PersistentSet_rb<T, func>::TreeIterator::operator+(int N)
 	{
-		nodep p = ptr;
+		Nodep p = ptr;
 		for (int i = 0; i < N; ++i)
 			p = successor();
 		return TreeIterator(p, root);
@@ -735,7 +727,7 @@ namespace pset {
 	template<class T, typename func>
 	inline PSrb_TreeIterator<T, func> PersistentSet_rb<T, func>::TreeIterator::operator-(int N)
 	{
-		nodep p = ptr;
+		Nodep p = ptr;
 		for (int i = 0; i < N; ++i)
 			p = predecessor();
 		return TreeIterator(p, root);

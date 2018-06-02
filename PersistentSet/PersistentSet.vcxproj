@@ -114,6 +114,8 @@
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CsvParser.h" />
+    <ClInclude Include="Movie.h" />
     <ClInclude Include="PersistentSet.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
