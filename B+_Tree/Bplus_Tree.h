@@ -14,21 +14,24 @@ using namespace std;
 
 //namespace BpTr
 //{
-	template<class T>
+	template<class KeyClass>
 	struct Node
 	{
-		T								*data;
+		KeyClass *data;
 
-		bool							leaf;
+		bool	leaf;
 
-		Node							*parent;
-		Node							**keys;
-		int								size;
+		Node	*parent;
+		Node	**keys;
+		int		size;
+
+		int		keysSize;
+		int		dataSize;
 
 		//Binary search.
 		//Returns position of the first occurance of k or place after it's predecessor.
 		//Returned pos is connected to keys field.
-		int								binSearch				(T &data, bool first);
+		int								binSearch				(KeyClass &data, bool first);
 
 		//Get first occurance of an element placed on position pos.
 		int								catchFirstOcc			(int pos);
@@ -40,10 +43,10 @@ using namespace std;
 		void							updateKey				();
 
 		//Insert element into data array.
-		void							push					(T &elem, int pos);
+		void							push					(KeyClass &elem, int pos);
 
 		//Insert node into keys array.
-		void							push					(Node<T> *key, int pos);
+		void							push					(Node<KeyClass> *key, int pos);
 
 		//Erase element on position pos.
 		void							erase					(int pos, bool delete_node);
@@ -55,20 +58,26 @@ using namespace std;
 																	int Capacity = 0,
 																	int _size = 0,
 																	Node ** _keys = nullptr,
-																	T *_data = nullptr,
+																	KeyClass *_data = nullptr,
 																	Node *_parent = nullptr	) : keys(_keys), parent(_parent), leaf(_leaf), 
 																								size(_size), data(_data)			
 																								{
 																									if (Capacity != 0)
-																									data = new T[Capacity+1];
+																										dataSize = Capacity + 1;
+																									data = new KeyClass[dataSize];
+																									//for (int i = 0; i < dataSize; ++i) {
+																									//	data[i] = nullptr;
+																									//}
 																									if (!leaf)
 																									{
-																										keys = new Node<T>*[Capacity+1];
-//																										for (int i = 0; i < Capacity+1; ++i)
-//																											keys[i] = nullptr;
+																										keysSize = Capacity + 1;
+																										keys = new Node<KeyClass>*[keysSize];
+																										for (int i = 0; i < keysSize; ++i)
+																											keys[i] = nullptr;
 																									}
 																									else {
-																										keys = new Node<T>*();
+																										keysSize = 1;
+																										keys = new Node<KeyClass>*();
 																										*keys = nullptr;
 																									}
 										}
@@ -79,7 +88,7 @@ using namespace std;
 																									parent = nullptr;
 																									delete[] data;
 																									data = nullptr;
-																									if (!leaf)
+																									if (!leaf && keys)
 																									{
 																										for (int i = 0; i < size; ++i)
 																										{
@@ -95,17 +104,18 @@ using namespace std;
 																									}
 																									else if (leaf)
 																									{
-																										if (keys && *keys)
+																										if (keys && *keys) {
 																											*keys = nullptr;
-																										delete keys;
-																										cout << "Deleted.";
+																											delete keys;
+																										}
 																										keys = nullptr;
 																									}
+																									cout << "Deleted.";
 																								};
 	};
 
 
-	template<class T>
+	template<class KeyClass>
 	class BpTree
 	{
 
@@ -115,25 +125,25 @@ using namespace std;
 		int								Capacity;
 
 		//Tree root.
-		Node<T>							*root;
+		Node<KeyClass>							*root;
 
 		//Current number of nodes.
 		int								size;
 
 		//Delete node p without deleting nodes linked to p.
-		void							cutNode						(Node<T> *p);
+		void							cutNode						(Node<KeyClass> *p);
 
 		//Merge nodes on positions pos and pos+1.
-		Node<T>							*mergeWithNext				(Node<T> *&p, int pos);
+		Node<KeyClass>							*mergeWithNext				(Node<KeyClass> *&p, int pos);
 
 		//After-deletion procedure.
-		void							merge						(Node<T> *p);
+		void							merge						(Node<KeyClass> *p);
 
 		//After-insertion procedure.
-		void							split						(Node<T> *p);
+		void							split						(Node<KeyClass> *p);
 
 		//Split node p by 2.
-		Node<T>							*makeSecondNode				(Node<T> *&p);
+		Node<KeyClass>							*makeSecondNode				(Node<KeyClass> *&p);
 		
 		//If root is full, add new root. Increases tree height.
 		void							createNewRoot				();
@@ -147,24 +157,24 @@ using namespace std;
 		int								getCapacity					()	const;
 
 		//Access to root field.
-		Node<T>							*getRoot					()	const;
+		Node<KeyClass>							*getRoot					()	const;
 
 		//Access to size field.
 		int								getSize						()	const;
 
 		//Insert element x.
-		void							insert						(T &data);
+		void							insert						(KeyClass &data);
 
 		//Search for element x.
 		//If x is found returns node which contains x
 		//If x is not found returns nullptr.
 		//If index != nullptr it receives a position of x in returned node.
-		Node<T>							*search						(T &data, int *index = nullptr);
+		Node<KeyClass>							*search						(KeyClass &data, int *index = nullptr);
 
 		//Remove element x.
 		//Returns true if x is removed.
 		//Returns false if x is not found.
-		bool							remove						(T &data);
+		bool							remove						(KeyClass &data);
 
 		//Free all allocated memory.
 		void							clear						();
@@ -184,7 +194,7 @@ using namespace std;
 	};
 
 
-	template<class T>
+	template<class KeyClass>
 	class BpTreeHandler
 	{
 
@@ -192,7 +202,7 @@ using namespace std;
 
 		queue<int> q;
 
-		void write_proc(Node<T> *p, ofstream *file, int label, int capacity);
+		void write_proc(Node<KeyClass> *p, ofstream *file, int label, int capacity);
 		void writeLabels(ofstream *file);
 
 
@@ -202,19 +212,19 @@ using namespace std;
 		//Gets user's input from console and visualizes changes in a user-friendly way.
 		//Parameter Tr is used for working with an existing tree to save result.
 		//If Tr is not specified, tree is created automatically and gets deleted.
-		void							getInput(BpTree<T> *Tr = nullptr);
+		void							getInput(BpTree<KeyClass> *Tr = nullptr);
 
 
 
 		//This function performs tree visualization. It writes it into a DOT file, and then pushes the file to GraphViz app.
 		//Format is PNG.
-		void write_tree_to_image_file(BpTree<T> *Tr, string filename);
+		void write_tree_to_image_file(BpTree<KeyClass> *Tr, string filename);
 
 		string get_cd();
 	};
 
-	template<class T>
-	inline void Node<T>::updateKey()
+	template<class KeyClass>
+	inline void Node<KeyClass>::updateKey()
 	{
 		if (leaf && parent)
 		{
@@ -234,15 +244,16 @@ using namespace std;
 			parent->updateKey();
 	}
 
-	template<class T>
-	int Node<T>::binSearch(T &k, bool first)
+	template<class KeyClass>
+	int Node<KeyClass>::binSearch(KeyClass &k, bool first)
 	{
-		int sz = leaf ? size : size - 1;
+		int sz = leaf ? size : size-1;
 		int r = sz;
 		int l = 0;
 
 		if (k < data[0])
 			return 0;
+
 		if (k > data[r - 1])
 			return sz;
 
@@ -253,7 +264,7 @@ using namespace std;
 				r = m;
 			else if (data[m] == k)
 			{
-				return first ? catchFirstOcc(m + 1) : catchLastOcc(m+1);
+				return first ? catchFirstOcc(m) : catchLastOcc(m);
 			}
 			else if (data[m] < k && (m + 1 >= sz-1 || k < data[m + 1]))
 			{
@@ -265,8 +276,8 @@ using namespace std;
 		return l;
 	}
 
-	template<class T>
-	inline int Node<T>::catchFirstOcc(int pos)
+	template<class KeyClass>
+	inline int Node<KeyClass>::catchFirstOcc(int pos)
 	{
 		if (pos >= size || pos <= 1)
 			return pos;
@@ -275,8 +286,8 @@ using namespace std;
 		return pos;
 	}
 
-	template<class T>
-	inline int Node<T>::catchLastOcc(int pos)
+	template<class KeyClass>
+	inline int Node<KeyClass>::catchLastOcc(int pos)
 	{
 		if (pos >= size-1 || pos <= 0)
 			return pos;
@@ -285,8 +296,8 @@ using namespace std;
 		return pos;
 	}
 
-	template<class T>
-	inline void Node<T>::push(T & elem, int pos)
+	template<class KeyClass>
+	inline void Node<KeyClass>::push(KeyClass & elem, int pos)
 	{
 		//if (!leaf)
 		//	return;
@@ -304,12 +315,12 @@ using namespace std;
 //		updateKey();
 	}
 
-	template<class T>
-	inline void Node<T>::push(Node<T>* key, int pos)
+	template<class KeyClass>
+	inline void Node<KeyClass>::push(Node<KeyClass>* key, int pos)
 	{
 		if (leaf)
 			return;
-		for (int i = size-1; i > pos; --i)
+		for (int i = size; i > pos; --i)
 			keys[i] = keys[i - 1];
 		keys[pos] = key;
 		key->parent = this;
@@ -317,8 +328,8 @@ using namespace std;
 		updateKey();
 	}
 
-	template<class T>
-	inline void Node<T>::erase(int pos, bool delete_node)
+	template<class KeyClass>
+	inline void Node<KeyClass>::erase(int pos, bool delete_node)
 	{
 		if (!leaf)
 		{
@@ -330,6 +341,8 @@ using namespace std;
 			}
 			for (int i = pos+1; i < size; ++i)
 				keys[i - 1] = keys[i];
+			for (int i=size; i<keysSize; ++i)
+				keys[i] = nullptr;
 			if (pos != size - 1)
 				for (int i = pos+1; i <size-1; ++i)
 					data[i - 1] = data[i];
@@ -343,8 +356,8 @@ using namespace std;
 		updateKey();
 	}
 
-	template<class T>
-	inline void BpTree<T>::cutNode(Node<T>* p)
+	template<class KeyClass>
+	inline void BpTree<KeyClass>::cutNode(Node<KeyClass>* p)
 	{
 		if (!p->leaf)
 		{
@@ -357,15 +370,16 @@ using namespace std;
 		else p->keys = nullptr;
 		p->parent = nullptr;
 		delete p;
+		int k = 0;
 	}
 	
-	template<class T>
-	inline Node<T> *BpTree<T>::mergeWithNext(Node<T>* &p, int pos)
+	template<class KeyClass>
+	inline Node<KeyClass> *BpTree<KeyClass>::mergeWithNext(Node<KeyClass>* &p, int pos)
 	{
 		if (p->leaf)
 			return nullptr;
-		Node<T> *m = p->keys[pos];
-		Node<T> *n = p->keys[pos + 1];
+		Node<KeyClass> *m = p->keys[pos];
+		Node<KeyClass> *n = p->keys[pos + 1];
 
 		if (!m->leaf)
 		{
@@ -382,8 +396,8 @@ using namespace std;
 				m->push(n->data[i], m->size);
 			m->keys = n->keys;
 			*n->keys = nullptr;
-			delete n->keys;
-			n->keys = nullptr;
+			//delete n->keys;
+			//n->keys = nullptr;
 		}
 
 		if (m->leaf && p)
@@ -400,8 +414,8 @@ using namespace std;
 		return m;
 	}
 
-	template<class T>
-	inline void BpTree<T>::merge(Node<T>* p)
+	template<class KeyClass>
+	inline void BpTree<KeyClass>::merge(Node<KeyClass>* p)
 	{
 		if (!p)
 			return;
@@ -423,8 +437,8 @@ using namespace std;
 			if (pos >= p->parent->size)
 				break;
 
-			Node<T> *l = pos-1<0 ? nullptr : p->parent->keys[pos - 1];
-			Node<T> *r = pos+1 == p->parent->size ? nullptr : p->parent->keys[pos + 1];
+			Node<KeyClass> *l = pos-1<0 ? nullptr : p->parent->keys[pos - 1];
+			Node<KeyClass> *r = pos+1 == p->parent->size ? nullptr : p->parent->keys[pos + 1];
 			if (l && p->size+l->size + p->leaf <= Capacity) // && size1+size2>=Capacity-1
 			{
 				p = p->parent;
@@ -460,9 +474,10 @@ using namespace std;
 		}
 	}
 	
-	template<class T>
-	inline void BpTree<T>::split(Node<T>* p)
+	template<class KeyClass>
+	inline void BpTree<KeyClass>::split(Node<KeyClass>* p)
 	{
+		
 		if (!p->leaf && p->size - 1 < Capacity)
 			return;
 		if (p->size < Capacity)
@@ -470,61 +485,77 @@ using namespace std;
 		while (p->parent && ((p->leaf && p->size >= Capacity) || (!p->leaf && p->size > Capacity)))
 		{
 //			delete p;
-			Node<T> *k = makeSecondNode(p);
+			Node<KeyClass> *k = makeSecondNode(p);
 			if (!k->leaf)
 			{
-				int pos = p->parent->binSearch(p->data[0], false);
-				p->parent->push(k, pos + 1);
-				p->parent->push(k->data[0], pos + 1);
+				int pos = p->parent->binSearch(k->data[0], false);
+				if (k->data[0] < p->parent->data[pos]) {
+					p->parent->push(k, pos+1);
+					p->parent->push(k->data[0], pos);
+				}
+				else {
+					p->parent->push(k, pos + 1);
+					p->parent->push(k->data[0], pos + 1);
+				}
 				k->erase(0, false);
 			}
 			else {
-				int pos = p->parent->binSearch(p->data[0], false);
-				p->parent->push(k->data[0], pos);
-				p->parent->push(k, pos + 1);
-
+				int pos = p->parent->binSearch(k->data[0], false);
+				if (k->data[0] < p->parent->data[pos]) {
+					p->parent->push(k->data[0], pos);
+					p->parent->push(k, pos+1);
+				}
+				else {
+					p->parent->push(k->data[0], pos + 1);
+					//				p->parent->push(p, pos);
+					p->parent->push(k, pos + 1);
+				}
 			}
 			p = p->parent;
-			//			print();
+//			print();
 		}
 
 		createNewRoot();
 	}
 
-	template<class T>
-	inline Node<T>* BpTree<T>::makeSecondNode(Node<T>* &p)
+
+	
+	template<class KeyClass>
+	inline Node<KeyClass>* BpTree<KeyClass>::makeSecondNode(Node<KeyClass>* &p)
 	{
-		Node<T> *k = nullptr;
+		Node<KeyClass> *k = nullptr;
 		if (p->leaf)
 		{
-			k = new Node<T>(true, Capacity, ((p->size % 2 == 0) ? p->size / 2 : p->size / 2 + 1));
+			k = new Node<KeyClass>(true, Capacity, ((p->size % 2 == 0) ? p->size / 2 : p->size / 2 + 1)); //-> p -> k ->
 			for (int i = 0; i < k->size; ++i)
 				k->data[i] = p->data[p->size-k->size+i];
 			p->size -= k->size;
-			delete k->keys;
+			Node<KeyClass> ** tmp = k->keys;
 			k->keys = p->keys;
-			p->keys = new Node<T>*(); 
+			p->keys = tmp; 
 			*p->keys = k;
 		}
 		else  {
-			k = new Node<T>(false, Capacity, (p->size % 2 == 1) ? p->size / 2 : p->size/2+1 );
+			k = new Node<KeyClass>(false, Capacity, (p->size % 2 == 1) ? p->size / 2 : p->size/2+1 );
 			for (int i = 0; i < k->size; ++i)
 			{
-				k->keys[i] = p->keys[p->size-k->size+i];
-				k->keys[i]->parent = k;
+				k->keys[i] = p->keys[p->size - k->size+i];
+				p->keys[p->size - k->size + i] = nullptr;
+				if (i!=0 && k->keys[i])
+					k->keys[i]->parent = k;
 			}
-			for (int i = k->size - 1; i < p->size; ++i)
-				p->keys[i] = nullptr;
+			//for (int i = k->size-1; i < p->size; ++i)
+			//	p->keys[i] = nullptr;
 			for (int i = 0; i < k->size - 1; ++i)
-				k->data[i] = p->data[p->size-k->size-1+i];
+				k->data[i] = p->data[p->size-k->size+i];
 			p->size -= k->size-1;
 		}
 		k->parent = p->parent;
 		return k;
 	}
 
-	template<class T>
-	inline void BpTree<T>::createNewRoot()
+	template<class KeyClass>
+	inline void BpTree<KeyClass>::createNewRoot()
 	{
 		if (!root->leaf && root->size-1 < Capacity)
 			return;
@@ -533,11 +564,11 @@ using namespace std;
 		//delete root;
 
 
-		Node<T> *k = makeSecondNode(root);
+		Node<KeyClass> *k = makeSecondNode(root);
 //		delete k;
-
-		Node<T> *new_root = new Node<T>(false, Capacity, 2);
-		new_root->parent = nullptr;
+		
+		
+		Node<KeyClass> * new_root = new Node<KeyClass>(false, Capacity, 2);
 		new_root->keys[0] = root;
 		new_root->keys[1] = k;
 		if (!root->leaf)
@@ -550,37 +581,39 @@ using namespace std;
 
 		k->parent = new_root;
 		root->parent = new_root;
+		//delete root;
+		//delete k;
 		root = new_root;
 		++size;
 	}
 
-	template<class T>
-	inline int BpTree<T>::getCapacity() const
+	template<class KeyClass>
+	inline int BpTree<KeyClass>::getCapacity() const
 	{
 		return Capacity;
 	}
 
-	template<class T>
-	inline Node<T>* BpTree<T>::getRoot() const
+	template<class KeyClass>
+	inline Node<KeyClass>* BpTree<KeyClass>::getRoot() const
 	{
 		return root;
 	}
 
-	template<class T>
-	inline int BpTree<T>::getSize() const
+	template<class KeyClass>
+	inline int BpTree<KeyClass>::getSize() const
 	{
 		return size;
 	}
 
-	template<class T>
-	inline void BpTree<T>::insert(T & t)
+	template<class KeyClass>
+	inline void BpTree<KeyClass>::insert(KeyClass & t)
 	{
-		Node<T> * p = search(t);
+		Node<KeyClass> * p = search(t);
 		if (!p)
 		{
 			if (root)
 				clear();
-			root = new Node<T>(true, Capacity, 0);
+			root = new Node<KeyClass>(true, Capacity, 0);
 			root->push(t, 0);
 			size = 1;
 			return;
@@ -589,16 +622,17 @@ using namespace std;
 		int pos = p->binSearch(t, false);
 		p->push(t, pos);
 		++size;
-		split(p);
+
+	split(p);
 	}
 
-	template<class T>
-	Node<T>* BpTree<T>::search(T & data, int *index /* = nullptr */)
+	template<class KeyClass>
+	Node<KeyClass>* BpTree<KeyClass>::search(KeyClass & data, int *index /* = nullptr */)
 	{
 		if (!root)
 			return root;
-		Node<T> *p = root;
-		int pos = p->binSearch(data, false);
+		Node<KeyClass> *p = root;
+		int pos = p->binSearch(data, true);
 		while (p->leaf == false)
 		{
 			p = p->keys[pos];
@@ -609,11 +643,11 @@ using namespace std;
 		return p;
 	}
 
-	template<class T>
-	inline bool BpTree<T>::remove(T & data)
+	template<class KeyClass>
+	inline bool BpTree<KeyClass>::remove(KeyClass & data)
 	{
-		Node<T> *p = search(data);
-		int pos = p->binSearch(data, false);
+		Node<KeyClass> *p = search(data);
+		int pos = p->binSearch(data, true);
 		if (p->data[pos] == data)
 			p->erase(pos, true);
 		else if (pos!=0 && p->data[pos - 1] == data)
@@ -624,8 +658,8 @@ using namespace std;
 		return 1;
 	}
 
-	template<class T>
-	inline void BpTree<T>::clear()
+	template<class KeyClass>
+	inline void BpTree<KeyClass>::clear()
 	{
 		delete root;
 		root = nullptr;
@@ -690,8 +724,8 @@ using namespace std;
 	//	}
 	//}
 
-	template<class T>
-	inline void BpTreeHandler<T>::getInput(BpTree<T> *Tr)
+	template<class KeyClass>
+	inline void BpTreeHandler<KeyClass>::getInput(BpTree<KeyClass> *Tr)
 	{
 		bool existing = true;
 		if (!Tr)
@@ -703,7 +737,7 @@ using namespace std;
 				cout << "CAPACITY MUST BE >= 2. >>>";
 				cin >> cap;
 			}
-			Tr = new BpTree<T>(cap);
+			Tr = new BpTree<KeyClass>(cap);
 			existing = false;
 		}
 		int choise;
@@ -720,7 +754,7 @@ using namespace std;
 			cout << ">>>";
 
 			cin >> choise;
-			T data;
+			KeyClass data;
 			switch (choise)
 			{
 			case 1:
@@ -745,7 +779,7 @@ using namespace std;
 				cin >> data;
 				int val;
 				int *index = &val;
-				Node<T> *found = Tr->search(data, index);
+				Node<KeyClass> *found = Tr->search(data, index);
 				if (!found || found->data[val] != data)
 					message = "Not found " + to_string(data) + "."; //Found instead " << to_string(found->data[*index]) << ".";
 				else
@@ -774,8 +808,8 @@ using namespace std;
 		}
 	}
 
-	template<class T>
-	inline void BpTreeHandler<T>::write_proc(Node<T>* p, ofstream * file, int label, int capacity)
+	template<class KeyClass>
+	inline void BpTreeHandler<KeyClass>::write_proc(Node<KeyClass>* p, ofstream * file, int label, int capacity)
 	{
 		if (!p)
 			return;
@@ -817,7 +851,7 @@ using namespace std;
 		for (int i = 0; i < p->size; ++i)
 		{
 			(*file) << "\"node" << to_string(label) << "\":A" + to_string(label*capacity + i) << " -> \"node" << to_string(label*capacity + i) << "\"  [weight=999];" << endl; // "\":A" << to_string((label*capacity + i)*capacity) << ";" << endl;
-			if (p->keys[i]->parent == p)
+			if (p->keys[i] && p->keys[i]->parent == p)
 				(*file) << "\"node" << to_string(label) << "\":A" + to_string(label*capacity + i) << " -> \"node" << to_string(label*capacity + i) << "\"  [weight=999, dir=back];" << endl; // "\":A" << to_string((label*capacity + i)*capacity) << ";" << endl;
 		}
 
@@ -829,8 +863,8 @@ using namespace std;
 
 	}
 
-	template<class T>
-	inline void BpTreeHandler<T>::writeLabels(ofstream *file)
+	template<class KeyClass>
+	inline void BpTreeHandler<KeyClass>::writeLabels(ofstream *file)
 	{
 		if (q.empty())
 			return;
@@ -877,8 +911,8 @@ using namespace std;
 		//return !gvFreeContext(gvc);
 	//}
 
-	template<class T>
-	inline void BpTreeHandler<T>::write_tree_to_image_file(BpTree<T> *Tr, string filename)
+	template<class KeyClass>
+	inline void BpTreeHandler<KeyClass>::write_tree_to_image_file(BpTree<KeyClass> *Tr, string filename)
 	{
 		ofstream fout("tmp.gv", ios::out);
 		fout << "digraph " + filename + " {" << endl;
@@ -899,8 +933,8 @@ using namespace std;
 		_getch();
 	}
 
-	template<class T>
-	inline string BpTreeHandler<T>::get_cd()
+	template<class KeyClass>
+	inline string BpTreeHandler<KeyClass>::get_cd()
 	{
 		wchar_t * c = nullptr;
 		wstring w = _wgetcwd(c, _MAX_PATH);
