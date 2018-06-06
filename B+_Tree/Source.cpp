@@ -11,7 +11,7 @@ using namespace std;
 
 int main()
 {
-	BpTreeHandler<int> hnd;
+	BpTreeHandler<int, string> hnd;
 	hnd.getInput();
 	return 0;
 }
